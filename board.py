@@ -29,21 +29,27 @@ def display_board(board, rotated=False):
         board (list): A 2D list representing the checkers board.
         rotated (bool): A flag indicating if the board should be displayed rotated.
     """
+    # visualization settings for black's move
     if rotated:
         horizontal_labels = "  h g f e d c b a"
         vertical_labels = range(1, 9)
         rows = range(7, -1, -1)
         cols = range(7, -1, -1)
+    # visualization settings for white's move
     else:
         horizontal_labels = "  a b c d e f g h"
         vertical_labels = range(8, 0, -1)
         rows = range(8)
         cols = range(8)
     
+    # display the board with colors for checkers and queens
+    # upper line with letters
     print(horizontal_labels)
     for row in rows:
         row_label = vertical_labels[7 - row] if rotated else vertical_labels[row]
+        # number from the left of the board
         print(f"{row_label} ", end="")
+        # line of the board with checkers
         for col in cols:
             cell = board[row][col]
             if cell == 'r':
@@ -55,6 +61,8 @@ def display_board(board, rotated=False):
             elif cell == 'W':
                 print("\033[37mX\033[0m ", end="")  # White queen
             elif cell == '.':
-                print("\033[37m.\033[0m ", end="")  # Grey dots for empty fields
+                print("\033[37m.\033[0m ", end="")  # White dots for empty fields
+        # number from the right of the board
         print(f"{row_label}")
+    # bottom line with letters
     print(horizontal_labels)

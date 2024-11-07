@@ -224,6 +224,7 @@ def play_game():
     player1, player2 = get_player_names()
     board = initialize_board()
     players = [(player1, 'White'), (player2, 'Black')]
+    # setting current player to whites and his board orientation
     current_player_index = 0
     rotated = False
 
@@ -231,11 +232,12 @@ def play_game():
         current_player, color = players[current_player_index]
         display_move_prompt(current_player)
         display_board(board, rotated)
-
+        # flag to know if there was a successful move
         move_successful = False
         while not move_successful:
             start_pos, end_pos = get_move()
-            player_color = 'w' if color == 'White' else 'r'  # Correct player color assignment
+            # current player color flag
+            player_color = 'w' if color == 'White' else 'r'
             print(f"[Play Game] Player: {current_player}, Color: {color}, Player Color: {player_color}")  # Debug print
             move_successful = make_move(board, start_pos, end_pos, player_color, False)
             if not move_successful:
