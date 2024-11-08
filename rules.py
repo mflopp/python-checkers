@@ -1,5 +1,7 @@
 # rules.py
 
+from ui import display_winner
+
 def apply_capture(board, start_pos, end_pos):
     """
     Apply the capture move to the board.
@@ -99,3 +101,63 @@ def mandatory_capture(board, player_color, specific_piece=None):
                         mandatory_captures.append(((row, col), (row_next, col_next)))
 
     return mandatory_captures
+
+def non_capture_moves(board, player_color):
+    """
+    Get all possible non-capturing moves for the player's pieces.
+    Args:
+        board (list): The current state of the board.
+        player_color (str): The color of the current player ('w' for white, 'r' for red).
+    Returns:
+        list: A list of tuples indicating non-capturing moves.
+    """
+    directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+    non_capture_moves_list = []
+
+    for row in range(8):
+        for col in range(8):
+            piece = board[row][col]
+            if piece.lower() == player_color:
+                # Check for regular non-capturing moves
+                for dr, dc in directions:
+                    new_row, new_col = row + dr, col + dc
+                    if 0 <= new_row < 8 and 0 <= new_col < 8:
+                        if board[new_row][new_col] == '.':
+                            non_capture_moves_list.append(((row, col), (new_row, new_col)))
+
+                if piece.isupper():  # Check for flying king non-capturing moves
+                    for dr in range(-7, 8):
+                        for dc in range(-7, 8):
+                            if abs(dr) == abs(dc) and (dr != 0 or dc != 0):
+                                new_row, new_col = row + dr, col + dc
+                                if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == '.':
+                                    # Ensure there are no pieces blocking the path
+                                    path_clear = True
+                                    step_row = dr // abs(dr)
+                                    step_col = dc // abs(dc)
+                                    for step in range(1, abs(dr)):
+                                        if board[row + step * step_row][col + step * step_col] != '.':
+                                            path_clear = False
+                                            break
+                                    if path_clear:
+                                        non_capture_moves_list.append(((row, col), (new_row, new_col)))
+
+    return non_capture_moves_list
+
+def is_game_over(board, player_color):
+    """
+    Check if the game is over.
+    Args:
+        board (list): The current state of the board.
+        player_color (str): The color of the current player ('w' for white, 'r' for red).
+    Returns:
+        bool: True if the game is over, False otherwise.
+    """
+    opponent_color = 'r' if player_color == 'w' else 'w'
+
+    opponent_pieces = sum(row.count(opponent_color) + row.count(opponent_color.upper()) for row in board)
+    if opponent_pieces == 0 or not (mandatory_capture(board, opponent_color) or non_capture_moves(board, opponent_color)):
+        display_winner('White' if opponent_color == 'r' else 'Black')
+        return True
+
+    return False

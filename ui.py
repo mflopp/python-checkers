@@ -46,11 +46,11 @@ def display_winner(player):
     """
     print(f"Congratulations, {player}! You are the winner!")
 
-def display_draw_message():
-    """
-    Function to display a message when the game is a draw.
-    """
-    print("The game is a draw. Well played, both players!")
+# def display_draw_message():
+#     """
+#     Function to display a message when the game is a draw.
+#     """
+#     print("The game is a draw. Well played, both players!")
 def display_game_over_message():
     """
     Function to display a game over message.
