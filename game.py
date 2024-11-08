@@ -1,7 +1,7 @@
 # game.py
 
 from board import initialize_board, display_board
-from rules import is_valid_move, is_capture_move, apply_capture, promote_to_queen, mandatory_capture
+from rules import apply_capture, promote_to_queen, mandatory_capture
 from ui import get_player_names, display_welcome_message, display_move_prompt, display_invalid_move_message, display_capture_required_message, display_winner, display_draw_message, display_game_over_message
 
 def get_move():
@@ -50,153 +50,91 @@ def make_move(board, start_pos, end_pos, player_color, rotated):
     end_row, end_col = convert_position(end_pos, rotated)
 
     print(f"[Make Move] Start Pos: ({start_row}, {start_col}), End Pos: ({end_row}, {end_col}), Player Color: {player_color}, Piece: {board[start_row][start_col]}")  # Debug print
-    capture_move_flag = is_capture_move(board, (start_row, start_col), (end_row, end_col), player_color)
-    # Check for mandatory captures
+    capture_move_flag = False
+    # check for mandatory captures
     possible_captures = mandatory_capture(board, player_color)
     print(f"[Make Move] Mandatory Captures: {possible_captures}")  # Debug print
-    if possible_captures and not capture_move_flag:
-        display_capture_required_message()
-        return False
+
+    if possible_captures:
+        if ((start_row, start_col), (end_row, end_col)) not in possible_captures:
+            display_capture_required_message()
+            return False
+        capture_move_flag = True
 
     if capture_move_flag:
         apply_capture(board, (start_row, start_col), (end_row, end_col))
+        display_board(board, rotated)  # Debug print
         
         # Promote mid-capture if crossing to the opponent's back row
         if (player_color == 'w' and end_row == 0) or (player_color == 'r' and end_row == 7):
             board[end_row][end_col] = board[end_row][end_col].upper()
-            # Check for additional captures as a king
-            print(f"[Make Move] additional_capture after promoting to king: {board[end_row][end_col]}") # debug print)
-            additional_captures(board, (end_row, end_col), player_color, rotated)
+            print(f"[Make Move] additional_capture after promoting to king: {board[end_row][end_col]}")  # Debug print
+        
+        # Promote to queen if applicable
+        promote_to_queen(board, (end_row, end_col))
+        
+        # Check for additional captures only if the move was a capturing move
+        additional_captures = mandatory_capture(board, player_color, specific_piece=(end_row, end_col))
+        if additional_captures:
+            print(f"[Make Move] Additional Captures Available: {additional_captures}")  # Debug print
+            next_capture_start = end_pos
+            next_capture_end = f"{chr(additional_captures[0][1][1] + ord('a'))}{8 - additional_captures[0][1][0]}"
+            return make_move(board, next_capture_start, next_capture_end, player_color, rotated)
+
     else:
-        if not is_valid_move(board, (start_row, start_col), (end_row, end_col), player_color):
+        non_capture_moves_list = non_capture_moves(board, player_color)
+        if ((start_row, start_col), (end_row, end_col)) not in non_capture_moves_list:
             display_invalid_move_message()
             return False
         board[end_row][end_col] = board[start_row][start_col]
         board[start_row][start_col] = '.'
+        
+        # Promote to queen if applicable
+        promote_to_queen(board, (end_row, end_col))
 
-    promote_to_queen(board, (end_row, end_col))
-    
-    # Check for additional captures only if the move was a capturing move
-    if capture_move_flag:
-        additional_captures(board, (end_row, end_col), player_color, rotated)
-    
     return True
 
-def additional_captures(board, pos, player_color, rotated):
+def non_capture_moves(board, player_color):
     """
-    Check for additional captures and prompt the player to continue if possible.
-    Args:
-        board (list): The current state of the board.
-        pos (tuple): The position of the piece after the last capture.
-        player_color (str): The color of the current player ('w' for white, 'r' for red).
-        rotated (bool): A flag indicating if the board is rotated.
-    """
-    row, col = pos
-    directions = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
-    king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
-
-    piece = board[row][col]
-    is_king = piece.isupper()
-
-    while True:
-        possible_captures = []
-        if is_king:
-            capture_check_directions = king_directions
-        else:
-            capture_check_directions = directions
-
-        for direction in capture_check_directions:
-            row_diff, col_diff = direction
-            row_next = row + row_diff
-            col_next = col + col_diff
-
-            if is_king:
-                # Check for any distance in diagonal direction for kings
-                step_row = row_diff // abs(row_diff)
-                step_col = col_diff // abs(col_diff)
-                capture_possible = False
-
-                for distance in range(1, 8):
-                    row_next = row + step_row * distance
-                    col_next = col + step_col * distance
-
-                    if not (0 <= row_next < 8 and 0 <= col_next < 8):
-                        break
-
-                    if board[row_next][col_next] == '.':
-                        if capture_possible:
-                            possible_captures.append((row_next, col_next))
-                    elif board[row_next][col_next].lower() != player_color.lower():
-                        capture_possible = True
-                    else:
-                        break
-            else:
-                # Regular piece capture logic
-                row_capture = (row + row_next) // 2
-                col_capture = (col + col_next) // 2
-
-                if 0 <= row_next < 8 and 0 <= col_next < 8:
-                    if board[row_next][col_next] == '.' and (board[row_capture][col_capture].lower() != player_color.lower() and board[row_capture][col_capture] != '.'):
-                        possible_captures.append((row_next, col_next))
-
-        if not possible_captures:
-            break  # No more captures available
-
-        for capture_pos in possible_captures:
-            print(f"Additional capture available from {pos} to {capture_pos}")
-
-        # Assume the first available capture is chosen
-        next_pos = possible_captures[0]
-
-        # Convert the positions back to string format
-        start_pos_str = f"{chr(col + ord('a'))}{8 - row}"
-        end_pos_str = f"{chr(next_pos[1] + ord('a'))}{8 - next_pos[0]}"
-        
-        move_successful = make_move(board, start_pos_str, end_pos_str, player_color, rotated)
-        if move_successful:
-            row, col = next_pos
-        else:
-            print("Invalid move during additional captures. Please follow the rules of Checkers and try again.")
-            break
-
-def has_valid_moves(board, player_color):
-    """
-    Check if the player has any valid moves left.
+    Get all possible non-capturing moves for the player's pieces.
     Args:
         board (list): The current state of the board.
         player_color (str): The color of the current player ('w' for white, 'r' for red).
     Returns:
-        bool: True if the player has valid moves, False otherwise.
+        list: A list of tuples indicating non-capturing moves.
     """
     directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-    capture_directions = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
-    king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
+    non_capture_moves_list = []
 
     for row in range(8):
         for col in range(8):
-            piece = board[row][col].lower()
-            if piece == player_color:
+            piece = board[row][col]
+            if piece.lower() == player_color:
+                # Check for regular non-capturing moves
                 for dr, dc in directions:
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < 8 and 0 <= new_col < 8:
-                        if is_valid_move(board, (row, col), (new_row, new_col), player_color):
-                            return True
-                for dr, dc in capture_directions:
-                    new_row, new_col = row + dr, col + dc
-                    if 0 <= new_row < 8 and 0 <= new_col < 8:
-                        if is_capture_move(board, (row, col), (new_row, new_col), player_color):
-                            return True
-            elif piece == player_color and board[row][col].isupper():  # Check for queens/kings
-                for dr in range(-7, 8):
-                    for dc in range(-7, 8):
-                        if abs(dr) == abs(dc):
-                            new_row, new_col = row + dr, col + dc
-                            if 0 <= new_row < 8 and 0 <= new_col < 8 and (dr != 0 or dc != 0):
-                                if is_valid_move(board, (row, col), (new_row, new_col), player_color):
-                                    return True
-                                if is_capture_move(board, (row, col), (new_row, new_col), player_color):
-                                    return True
-    return False
+                        if board[new_row][new_col] == '.':
+                            non_capture_moves_list.append(((row, col), (new_row, new_col)))
+
+                if piece.isupper():  # Check for flying king non-capturing moves
+                    for dr in range(-7, 8):
+                        for dc in range(-7, 8):
+                            if abs(dr) == abs(dc) and (dr != 0 or dc != 0):
+                                new_row, new_col = row + dr, col + dc
+                                if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == '.':
+                                    # Ensure there are no pieces blocking the path
+                                    path_clear = True
+                                    step_row = dr // abs(dr)
+                                    step_col = dc // abs(dc)
+                                    for step in range(1, abs(dr)):
+                                        if board[row + step * step_row][col + step * step_col] != '.':
+                                            path_clear = False
+                                            break
+                                    if path_clear:
+                                        non_capture_moves_list.append(((row, col), (new_row, new_col)))
+
+    return non_capture_moves_list
 
 def is_game_over(board, player_color):
     """
@@ -210,7 +148,7 @@ def is_game_over(board, player_color):
     opponent_color = 'r' if player_color == 'w' else 'w'
 
     opponent_pieces = sum(row.count(opponent_color) + row.count(opponent_color.upper()) for row in board)
-    if opponent_pieces == 0 or not has_valid_moves(board, opponent_color):
+    if opponent_pieces == 0 or not (mandatory_capture(board, opponent_color) or non_capture_moves(board, opponent_color)):
         display_winner('White' if opponent_color == 'r' else 'Black')
         return True
 
@@ -246,23 +184,7 @@ def play_game():
         if is_game_over(board, player_color):
             display_game_over_message()
             break
-        
-        # Only check for additional captures if the move was a capturing move
-        if is_capture_move(board, convert_position(start_pos, rotated), convert_position(end_pos, rotated), player_color):
-            while True:
-                display_move_prompt(current_player)
-                display_board(board, rotated)
-                move_successful = False
-                while not move_successful:
-                    start_pos, end_pos = get_move()
-                    move_successful = make_move(board, start_pos, end_pos, player_color, rotated)
-                    if move_successful:
-                        additional_captures(board, convert_position(end_pos, rotated), player_color, rotated)
-                    else:
-                        print("Please try again.")
-                if not mandatory_capture(board, player_color):
-                    break
-        
+                
         rotated = not rotated  # Toggle the rotation flag
         current_player_index = 1 - current_player_index  # Switch player turn
 
