@@ -59,7 +59,8 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
         rotated (bool): Flag indicating if the board is rotated.
         player_name (str): The name of the current player.
         color (str): The color of the current player.
-        player_move (str): A tmp storage of player's move sequence.
+        move_history (list): stores the current move history
+        player_move (list): A tmp storage of player's move sequence.
     Returns:
         bool: True if the move was successful, False otherwise.
     """
@@ -79,6 +80,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
             return False
         # setting captures move flag to True
         capture_move_flag = True
+        # add the current move to tmp player's move sequence
         if player_move:
             player_move[0] += "-" + end_pos
         else:
@@ -136,6 +138,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
             return False
         board[end_row][end_col] = board[start_row][start_col]
         board[start_row][start_col] = '.'
+        # adding player move to tmp list
         player_move.append(start_pos + "-" + end_pos)
         # Promote to queen if applicable
         promote_to_queen(board, (end_row, end_col))
@@ -155,10 +158,13 @@ def play_game():
     players = [(player1, 'White'), (player2, 'Black')]
     # setting current player to whites and his board orientation
     current_player_index = 0
+    # flag to rotate the board according to player's turn
     rotated = False
 
     while True:
+        # initialize player's tmp move sequence
         player_move = []
+        # getting current player's name and color
         player_name, color = players[current_player_index]
         # display_move_prompt(player_name)
         display_board(board, player_name, color, move_history, rotated)
@@ -173,7 +179,9 @@ def play_game():
             move_successful = make_move(board, start_pos, end_pos, player_color, sequence, rotated, player_name, color, move_history, player_move)
             if not move_successful:
                 print("Please try again.")
+        # adding full sequence of the current player's move to the move history
         move_history[color].append(player_move[0])
+        # check if the game is over after the current player's move
         if is_game_over(board, player_color, players, color):
             display_game_over_message()
             break

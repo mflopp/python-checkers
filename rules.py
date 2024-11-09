@@ -161,10 +161,13 @@ def is_game_over(board, player_color, players, color):
     Returns:
         bool: True if the game is over, False otherwise.
     """
+    # getting opponent's color
     opponent_color = 'r' if player_color == 'w' else 'w'
+    # counting the number of opponent's pieces on the board
     opponent_pieces = sum(row.count(player_color) + row.count(player_color.upper()) for row in board)
+    # if no pieces or no any moves left
     if opponent_pieces == 0 or not (mandatory_capture(board, opponent_color) or non_capture_moves(board, opponent_color)):
-        # Determine the winner's name and color
+        # getting the winner's name by color
         player_name = next(player[0] for player in players if player[1] == color)
         display_winner(player_name, color)
         return True

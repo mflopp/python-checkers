@@ -35,6 +35,7 @@ def display_board(board, player_name, color, move_history, rotated=False):
     for color, moves in move_history.items():
         print(f"{color} Moves: {', '.join(moves)}")
     print("\n\n")
+    # displaying who's turn is now
     print(f"{player_name} ({color}), it's your turn.")
     # visualization settings for black's move
     if rotated:
