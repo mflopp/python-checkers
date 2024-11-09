@@ -1,7 +1,5 @@
 # rules.py
 
-from ui import display_winner
-
 def apply_capture(board, start_pos, end_pos):
     """
     Apply the capture move to the board.
@@ -21,13 +19,24 @@ def apply_capture(board, start_pos, end_pos):
     step_row = (end_row - start_row) // abs(end_row - start_row)
     step_col = (end_col - start_col) // abs(end_col - start_col)
     
-    # Capture all opponent pieces in the path
+    # Tag all opponent pieces in the path
     current_row, current_col = start_row + step_row, start_col + step_col
     while (current_row, current_col) != (end_row, end_col):
         if board[current_row][current_col].lower() != '.' and board[current_row][current_col].lower() != piece.lower():
-            board[current_row][current_col] = '.'
+            board[current_row][current_col] = 'c'  # Tag captured piece with 'c'
         current_row += step_row
         current_col += step_col
+
+def finalize_captures(board):
+    """
+    Finalize all captures on the board by replacing tagged pieces with dots.
+    Args:
+        board (list): The current state of the board.
+    """
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == 'c':
+                board[row][col] = '.'
 
 def promote_to_queen(board, pos):
     """
@@ -55,8 +64,9 @@ def mandatory_capture(board, player_color, specific_piece=None):
     # Directions for regular pieces (capture by jumping 2 squares in a direction)
     directions = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
     # Directions for king pieces (can capture in multiple steps in any diagonal direction)
-    king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + \
-                      [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
+    # king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + \
+    #                   [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
+    king_directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
     # variable to store mandatory capture moves
     mandatory_captures = []
     
@@ -66,6 +76,7 @@ def mandatory_capture(board, player_color, specific_piece=None):
     else:
         pieces_to_check = [(row, col) for row in range(8) for col in range(8) if board[row][col].lower() == player_color]
     # Loop through each piece to check for possible captures
+    
     for row, col in pieces_to_check:
         piece = board[row][col]
         if piece.lower() == player_color:
@@ -73,21 +84,20 @@ def mandatory_capture(board, player_color, specific_piece=None):
             if piece.isupper():
                 for direction in king_directions:
                     step_row, step_col = direction
-                    capture_possible = False
+                    opponent_encountered = False
                     for distance in range(1, 8):
                         row_next = row + step_row * distance
                         col_next = col + step_col * distance
-                        # Check if the position is within bounds
                         if not (0 <= row_next < 8 and 0 <= col_next < 8):
                             break
-                        # Check if the next position is empty
                         if board[row_next][col_next] == '.':
-                            if capture_possible:
+                            if opponent_encountered:
                                 mandatory_captures.append(((row, col), (row_next, col_next)))
-                                continue  # Continue checking in the same direction for additional captures
-                        # Check if the next position is an opponent's piece
-                        elif board[row_next][col_next].lower() != player_color.lower() and board[row_next][col_next] != '.':
-                            capture_possible = True
+                        elif board[row_next][col_next].lower() != player_color.lower() and board[row_next][col_next] != '.' and board[row_next][col_next] != 'c':
+                            if not opponent_encountered:
+                                opponent_encountered = True
+                            else:
+                                break
                         else:
                             break
             # Check captures for regular pieces
@@ -104,9 +114,13 @@ def mandatory_capture(board, player_color, specific_piece=None):
                     # Check if the next position is empty and there's an opponent's piece to capture
                     if (board[row_next][col_next] == '.' and 
                         board[mid_row][mid_col].lower() != player_color.lower() and 
-                        board[mid_row][mid_col] != '.'):
+                        board[mid_row][mid_col] != '.' and 
+                        board[mid_row][mid_col] != 'c'):
                         mandatory_captures.append(((row, col), (row_next, col_next)))
 
+    # Remove duplicate capture moves
+    # mandatory_captures = list(set(mandatory_captures))
+    
     return mandatory_captures
 
 def non_capture_moves(board, player_color):
@@ -118,7 +132,7 @@ def non_capture_moves(board, player_color):
     Returns:
         list: A list of tuples indicating non-capturing moves.
     """
-    directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+    directions = [(-1, -1), (-1, 1)] if player_color == 'w' else [(1, -1), (1, 1)]
     non_capture_moves_list = []
 
     for row in range(8):
@@ -151,13 +165,12 @@ def non_capture_moves(board, player_color):
 
     return non_capture_moves_list
 
-def is_game_over(board, player_color, players, color):
+def is_game_over(board, player_color):
     """
     Check if the game is over.
     Args:
         board (list): The current state of the board.
         player_color (str): The color of the current player ('w' for white, 'r' for red).
-        players (list): A list of tuples containing player names and their respective colors.
     Returns:
         bool: True if the game is over, False otherwise.
     """
@@ -167,9 +180,6 @@ def is_game_over(board, player_color, players, color):
     opponent_pieces = sum(row.count(player_color) + row.count(player_color.upper()) for row in board)
     # if no pieces or no any moves left
     if opponent_pieces == 0 or not (mandatory_capture(board, opponent_color) or non_capture_moves(board, opponent_color)):
-        # getting the winner's name by color
-        player_name = next(player[0] for player in players if player[1] == color)
-        display_winner(player_name, color)
         return True
 
     return False

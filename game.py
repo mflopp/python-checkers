@@ -1,12 +1,16 @@
 # game.py
 
 from board import initialize_board, display_board
-from rules import apply_capture, promote_to_queen, mandatory_capture, non_capture_moves, is_game_over
-from ui import get_player_names, display_welcome_message, display_move_prompt, display_invalid_move_message, display_capture_required_message, display_game_over_message
+from rules import apply_capture, promote_to_queen, mandatory_capture, non_capture_moves, is_game_over, finalize_captures
+from ui import get_player_names, display_invalid_move_message, display_capture_required_message, display_game_over_message, display_winner
+import random
 
-def get_move():
+def get_move(board, player_name, color, move_history, rotated):
     """
     Function to get the move from the player.
+    Args:
+        board, player_name, color, move_history, rotated - necessary evil to
+            call display_board function for smooth vizualization in terminal
     Returns:
         tuple: A tuple containing the starting position, ending position, and the sequence.
     """
@@ -19,8 +23,9 @@ def get_move():
     # It must contain at least one complete move (start-end), hence minimum length should be 2
     # Also check that each move component is exactly 2 characters long and matches the format [a-h][1-8]
     if len(moves) < 2 or any(len(m) != 2 or m[0] not in "abcdefgh" or m[1] not in "12345678" for m in moves):
-        print("Invalid move format. Please use the format [a-h][1-8]-[a-h][1-8]")
-        return get_move()
+        display_board(board, player_name, color, move_history, rotated)
+        print("\nInvalid move format. Please use the format [a-h][1-8]-[a-h][1-8]")
+        return get_move(board, player_name, color, move_history, rotated)
     
     # Extract the starting and ending positions from the move list
     start_pos = moves[0]
@@ -76,6 +81,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
     if possible_captures:
         # check if the player's move is in the mandatory capture's list
         if ((start_row, start_col), (end_row, end_col)) not in possible_captures:
+            display_board(board, player_name, color, move_history, rotated)
             display_capture_required_message(possible_captures)
             return False
         # setting captures move flag to True
@@ -125,7 +131,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
                 display_board(board, player_name, color, move_history, rotated)
                 display_capture_required_message(additional_captures)
                 # asking palyer for the next move in his capture sequence
-                _, next_capture_end, sequence = get_move()
+                _, next_capture_end, sequence = get_move(board, player_name, color, move_history, rotated)
             else:
                 # if there is only one possible manadtory capture setting the next_capture_end
                 next_capture_end = f"{chr(additional_captures[0][1][1] + ord('a'))}{8 - additional_captures[0][1][0]}"
@@ -134,6 +140,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
     else:
         non_capture_moves_list = non_capture_moves(board, player_color)
         if ((start_row, start_col), (end_row, end_col)) not in non_capture_moves_list:
+            display_board(board, player_name, color, move_history, rotated)
             display_invalid_move_message()
             return False
         board[end_row][end_col] = board[start_row][start_col]
@@ -144,18 +151,34 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
         promote_to_queen(board, (end_row, end_col))
     return True
 
-def play_game():
+def get_computer_move(board, player_color):
+    possible_moves = mandatory_capture(board, player_color) or non_capture_moves(board, player_color)
+    if possible_moves:
+        return random.choice(possible_moves)
+    return None
+
+def play_game(choice, color_choice):
     """
     Function to manage the game play.
     """
-    print("\033c")
-    display_welcome_message()
-    player1, player2 = get_player_names()
     # print("\033c")
+    # player1, player2 = get_player_names()
+    if choice == "1":
+        player1, player2 = get_player_names()
+        players = [(player1, 'White'), (player2, 'Black')]
+    else:
+        player1 = input("\nEnter the name of player: ").strip()
+        player2 = "Computer"
+        if color_choice == "White":  
+            players = [(player1, 'White'), (player2, 'Black')]
+        else:
+            players = [(player2, 'White'), (player1, 'Black')]   
+    
+    
     board = initialize_board()
     # Initialize move history for each player
     move_history = {"White": [], "Black": []}
-    players = [(player1, 'White'), (player2, 'Black')]
+    # players = [(player1, 'White'), (player2, 'Black')]
     # setting current player to whites and his board orientation
     current_player_index = 0
     # flag to rotate the board according to player's turn
@@ -166,23 +189,33 @@ def play_game():
         player_move = []
         # getting current player's name and color
         player_name, color = players[current_player_index]
-        # display_move_prompt(player_name)
         display_board(board, player_name, color, move_history, rotated)
-        print("\n\n")
+        print("\n")
         # flag to know if there was a successful move
         move_successful = False
         while not move_successful:
-            start_pos, end_pos, sequence = get_move()
             # current player color flag
             player_color = 'w' if color == 'White' else 'r'
-            # print(f"[Play Game] Player: {player_name}, Color: {color}, Player Color: {player_color}")  # Debug print
-            move_successful = make_move(board, start_pos, end_pos, player_color, sequence, rotated, player_name, color, move_history, player_move)
-            if not move_successful:
-                print("Please try again.")
+            if player_name == "Computer":
+                start_pos, end_pos = None, None
+                move = get_computer_move(board, 'r' if color == 'Black' else 'w')
+                if move:
+                    start_pos, end_pos = f"{chr(move[0][1] + ord('a'))}{8 - move[0][0]}", f"{chr(move[1][1] + ord('a'))}{8 - move[1][0]}"
+                    move_successful = make_move(board, start_pos, end_pos, 'r' if color == 'Black' else 'w', [], rotated, player_name, color, move_history, player_move)
+            else:
+                start_pos, end_pos, sequence = get_move(board, player_name, color, move_history, rotated)
+                # print(f"[Play Game] Player: {player_name}, Color: {color}, Player Color: {player_color}")  # Debug print
+                move_successful = make_move(board, start_pos, end_pos, player_color, sequence, rotated, player_name, color, move_history, player_move)
         # adding full sequence of the current player's move to the move history
         move_history[color].append(player_move[0])
+        # replace tagged for capture fields with dots
+        finalize_captures(board)
         # check if the game is over after the current player's move
-        if is_game_over(board, player_color, players, color):
+        if is_game_over(board, player_color):
+            # getting the winner's name by color
+            player_name = next(player[0] for player in players if player[1] == color)
+            display_board(board, player_name, color, move_history, rotated)
+            display_winner(player_name, color)
             display_game_over_message()
             break
                 
