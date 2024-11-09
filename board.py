@@ -22,13 +22,20 @@ def initialize_board():
 
     return board
 
-def display_board(board, rotated=False):
+def display_board(board, player_name, color, move_history, rotated=False):
     """
     Function to display the checkers board in the terminal.
     Args:
         board (list): A 2D list representing the checkers board.
         rotated (bool): A flag indicating if the board should be displayed rotated.
     """
+    print("\033c")
+    # Display the move history
+    print("\nMove History:")
+    for color, moves in move_history.items():
+        print(f"{color} Moves: {', '.join(moves)}")
+    print("\n\n")
+    print(f"{player_name} ({color}), it's your turn.")
     # visualization settings for black's move
     if rotated:
         horizontal_labels = "  h g f e d c b a"
@@ -61,7 +68,7 @@ def display_board(board, rotated=False):
             elif cell == 'W':
                 print("\033[37mX\033[0m ", end="")  # White queen
             elif cell == '.':
-                print("\033[37m.\033[0m ", end="")  # White dots for empty fields
+                print("\033[37m·\033[0m ", end="")  # White dots for empty fields
         # number from the right of the board
         print(f"{row_label}")
     # bottom line with letters

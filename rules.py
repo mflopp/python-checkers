@@ -151,20 +151,22 @@ def non_capture_moves(board, player_color):
 
     return non_capture_moves_list
 
-def is_game_over(board, player_color):
+def is_game_over(board, player_color, players, color):
     """
     Check if the game is over.
     Args:
         board (list): The current state of the board.
         player_color (str): The color of the current player ('w' for white, 'r' for red).
+        players (list): A list of tuples containing player names and their respective colors.
     Returns:
         bool: True if the game is over, False otherwise.
     """
     opponent_color = 'r' if player_color == 'w' else 'w'
-
-    opponent_pieces = sum(row.count(opponent_color) + row.count(opponent_color.upper()) for row in board)
+    opponent_pieces = sum(row.count(player_color) + row.count(player_color.upper()) for row in board)
     if opponent_pieces == 0 or not (mandatory_capture(board, opponent_color) or non_capture_moves(board, opponent_color)):
-        display_winner('White' if opponent_color == 'r' else 'Black')
+        # Determine the winner's name and color
+        player_name = next(player[0] for player in players if player[1] == color)
+        display_winner(player_name, color)
         return True
 
     return False

@@ -33,18 +33,37 @@ def display_invalid_move_message():
     """
     print("Invalid move. Please follow the rules of Checkers and try again.")
 
-def display_capture_required_message():
+def display_capture_required_message(possible_captures):
     """
-    Function to display a message when a capture is required.
-    """
-    print("You have a mandatory capture. Please make a capturing move.")
-def display_winner(player):
-    """
-    Function to display the winner of the game.
+    Function to display a message when a capture is required, including all mandatory capture options.
     Args:
-        player (str): The name of the winning player.
+        possible_captures (list): A list of tuples indicating mandatory capture moves.
     """
-    print(f"Congratulations, {player}! You are the winner!")
+    # Initialize a list to hold the human-friendly capture moves
+    capture_moves = []
+    
+    # Convert the capture moves to human-friendly format
+    for start, end in possible_captures:
+        start_pos = f"{chr(start[1] + ord('a'))}{8 - start[0]}"
+        end_pos = f"{chr(end[1] + ord('a'))}{8 - end[0]}"
+        capture_moves.append(f"{start_pos}-{end_pos}")
+    
+    # Display the message with the list of capture moves
+    print("You have a mandatory capture. Please make a capturing move.")
+    print("Mandatory capture options: " + ", ".join(capture_moves))
+
+# Example usage
+# possible_captures = [((2, 0), (0, 2)), ((4, 4), (2, 6))]
+# display_capture_required_message(possible_captures)
+
+def display_winner(player_name, player_color):
+    """
+    Function to display the winner message.
+    Args:
+        player_name (str): The name of the winning player.
+        player_color (str): The color of the winning player.
+    """
+    print(f"\n{player_name} ({player_color}) is the winner. Congratulations!")
 
 # def display_draw_message():
 #     """
@@ -55,4 +74,4 @@ def display_game_over_message():
     """
     Function to display a game over message.
     """
-    print("Game over. Thank you for playing Checkers!")
+    print("Game over. Thank you for playing Checkers!\n")
