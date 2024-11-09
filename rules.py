@@ -52,19 +52,24 @@ def mandatory_capture(board, player_color, specific_piece=None):
     Returns:
         list: A list of tuples indicating mandatory capture moves.
     """
+    # Directions for regular pieces (capture by jumping 2 squares in a direction)
     directions = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
-    king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
-
+    # Directions for king pieces (can capture in multiple steps in any diagonal direction)
+    king_directions = [(-i, -i) for i in range(1, 8)] + [(-i, i) for i in range(1, 8)] + \
+                      [(i, -i) for i in range(1, 8)] + [(i, i) for i in range(1, 8)]
+    # variable to store mandatory capture moves
     mandatory_captures = []
     
+    # Determine which pieces to check for mandatory captures
     if specific_piece:
         pieces_to_check = [specific_piece]
     else:
         pieces_to_check = [(row, col) for row in range(8) for col in range(8) if board[row][col].lower() == player_color]
-
+    # Loop through each piece to check for possible captures
     for row, col in pieces_to_check:
         piece = board[row][col]
         if piece.lower() == player_color:
+            # Check captures for king pieces
             if piece.isupper():
                 for direction in king_directions:
                     step_row, step_col = direction
@@ -72,18 +77,20 @@ def mandatory_capture(board, player_color, specific_piece=None):
                     for distance in range(1, 8):
                         row_next = row + step_row * distance
                         col_next = col + step_col * distance
-
+                        # Check if the position is within bounds
                         if not (0 <= row_next < 8 and 0 <= col_next < 8):
                             break
-
+                        # Check if the next position is empty
                         if board[row_next][col_next] == '.':
                             if capture_possible:
                                 mandatory_captures.append(((row, col), (row_next, col_next)))
-                                break
-                        elif board[row_next][col_next].lower() != player_color.lower():
+                                continue  # Continue checking in the same direction for additional captures
+                        # Check if the next position is an opponent's piece
+                        elif board[row_next][col_next].lower() != player_color.lower() and board[row_next][col_next] != '.':
                             capture_possible = True
                         else:
                             break
+            # Check captures for regular pieces
             else:
                 for direction in directions:
                     row_next = row + direction[0]
@@ -91,10 +98,10 @@ def mandatory_capture(board, player_color, specific_piece=None):
 
                     if not (0 <= row_next < 8 and 0 <= col_next < 8):
                         continue
-
+                    # Check if the position is within bounds
                     mid_row = row + (row_next - row) // 2
                     mid_col = col + (col_next - col) // 2
-
+                    # Check if the next position is empty and there's an opponent's piece to capture
                     if (board[row_next][col_next] == '.' and 
                         board[mid_row][mid_col].lower() != player_color.lower() and 
                         board[mid_row][mid_col] != '.'):
