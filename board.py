@@ -68,6 +68,10 @@ def display_board(board, player_name, color, move_history, rotated=False):
                 print("\033[31mX\033[0m ", end="")  # Red queen
             elif cell == 'W':
                 print("\033[37mX\033[0m ", end="")  # White queen
+            elif cell == 'C':
+                print("\033[37m*\033[0m ", end="")  # White captured piece
+            elif cell == 'c':
+                print("\033[31m*\033[0m ", end="")  # Black captured piece
             elif cell == '.':
                 print("\033[37m·\033[0m ", end="")  # White dots for empty fields
         # number from the right of the board

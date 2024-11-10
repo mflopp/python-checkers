@@ -93,7 +93,7 @@ def make_move(board, start_pos, end_pos, player_color, sequence, rotated, player
             player_move.append(start_pos + "-" + end_pos)
     # check if the player's move is a correct capture move
     if capture_move_flag:
-        apply_capture(board, (start_row, start_col), (end_row, end_col))
+        apply_capture(board, (start_row, start_col), (end_row, end_col), player_color)
         # display_board(board, player_name, color, False)  # Debug print
         
         # check for mid-capture promotion to queen

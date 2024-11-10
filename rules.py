@@ -1,12 +1,13 @@
 # rules.py
 
-def apply_capture(board, start_pos, end_pos):
+def apply_capture(board, start_pos, end_pos, player_color):
     """
     Apply the capture move to the board.
     Args:
         board (list): The current state of the board.
         start_pos (tuple): The starting position as (row, col).
         end_pos (tuple): The ending position as (row, col).
+        player_color (str): The color of the current player ('w' for white, 'r' for red).
     """
     start_row, start_col = start_pos
     end_row, end_col = end_pos
@@ -21,9 +22,10 @@ def apply_capture(board, start_pos, end_pos):
     
     # Tag all opponent pieces in the path
     current_row, current_col = start_row + step_row, start_col + step_col
+    capture_tag = 'c' if player_color == 'w' else 'C'
     while (current_row, current_col) != (end_row, end_col):
         if board[current_row][current_col].lower() != '.' and board[current_row][current_col].lower() != piece.lower():
-            board[current_row][current_col] = 'c'  # Tag captured piece with 'c'
+            board[current_row][current_col] = capture_tag  # Tag captured piece with 'c' or 'C'
         current_row += step_row
         current_col += step_col
 
@@ -35,7 +37,7 @@ def finalize_captures(board):
     """
     for row in range(8):
         for col in range(8):
-            if board[row][col] == 'c':
+            if board[row][col].lower() == 'c':
                 board[row][col] = '.'
 
 def promote_to_queen(board, pos):
@@ -93,7 +95,7 @@ def mandatory_capture(board, player_color, specific_piece=None):
                         if board[row_next][col_next] == '.':
                             if opponent_encountered:
                                 mandatory_captures.append(((row, col), (row_next, col_next)))
-                        elif board[row_next][col_next].lower() != player_color.lower() and board[row_next][col_next] != '.' and board[row_next][col_next] != 'c':
+                        elif board[row_next][col_next].lower() != player_color.lower() and board[row_next][col_next] != '.' and board[row_next][col_next].lower() != 'c':
                             if not opponent_encountered:
                                 opponent_encountered = True
                             else:
@@ -115,7 +117,7 @@ def mandatory_capture(board, player_color, specific_piece=None):
                     if (board[row_next][col_next] == '.' and 
                         board[mid_row][mid_col].lower() != player_color.lower() and 
                         board[mid_row][mid_col] != '.' and 
-                        board[mid_row][mid_col] != 'c'):
+                        board[mid_row][mid_col].lower() != 'c'):
                         mandatory_captures.append(((row, col), (row_next, col_next)))
 
     # Remove duplicate capture moves
